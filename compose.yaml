@@ -1,0 +1,7 @@
+﻿services:
+  svmodapi:
+    image: svmodapi
+    build:
+      context: .
+      dockerfile: SVModAPI/Dockerfile
+

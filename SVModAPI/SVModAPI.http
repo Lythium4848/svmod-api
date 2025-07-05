@@ -1,0 +1,6 @@
+@SVModAPI_HostAddress = http://localhost:5207
+
+GET {{SVModAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
