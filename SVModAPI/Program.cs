@@ -25,8 +25,6 @@ builder.Services.AddSingleton(new ApiKeyStore(apiKey ?? throw new InvalidOperati
 
 var app = builder.Build();
 
-//app.UseHttpsRedirection();
-
 app.UseRouting();
 
 app.MapControllers();
