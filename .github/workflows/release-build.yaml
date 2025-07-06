@@ -1,9 +1,8 @@
 ﻿name: Build and upload to latest release
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
 
 jobs:
   build-and-upload:
