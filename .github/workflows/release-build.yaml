@@ -25,13 +25,16 @@ jobs:
 
       - name: Publish for Linux
         run: dotnet publish SVModAPI/SVModAPI.csproj --configuration Release --framework net9.0 --runtime linux-x64 --self-contained true --output ./publish/linux-x64
+    
+      - name: Zip Linux build output
+        run: Compress-Archive -Path ./publish/linux-x64/* -DestinationPath ./linux-x64.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: addon
+          name: linux-x64
           retention-days: 1
-          path: linux-x64.zip
+          path: ./linux-x64.zip
 
       - name: Upload ZIP to release
         uses: xresloader/upload-to-github-release@v1
