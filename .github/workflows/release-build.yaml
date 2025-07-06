@@ -24,7 +24,7 @@ jobs:
         run: dotnet build SVModAPI.sln --configuration Release --no-restore
 
       - name: Publish for Linux
-        run: dotnet publish SVModAPI.csproj --configuration Release --framework net9.0 --runtime linux-x64 --self-contained true --output ./publish/linux-x64
+        run: dotnet publish SVModAPI/SVModAPI.csproj --configuration Release --framework net9.0 --runtime linux-x64 --self-contained true --output ./publish/linux-x64
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
