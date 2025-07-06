@@ -8,7 +8,6 @@ namespace SVModAPI;
 
 [ApiController]
 [Route("/")]
-
 public class VehiclesController(ApiDbContext context, ILogger<VehiclesController> logger) : ControllerBase
 {
     [HttpPost("add_vehicle")]
@@ -48,7 +47,8 @@ public class VehiclesController(ApiDbContext context, ILogger<VehiclesController
             context.Vehicles.Update(existingVehicle);
             await context.SaveChangesAsync();
 
-            logger.LogInformation("Updated existing vehicle: {Model} (ID: {Id})", existingVehicle.Model, existingVehicle.Id);
+            logger.LogInformation("Updated existing vehicle: {Model} (ID: {Id})", existingVehicle.Model,
+                existingVehicle.Id);
 
             return Ok(new { message = "Vehicle updated successfully", id = existingVehicle.Id });
         }
@@ -72,62 +72,44 @@ public class VehiclesController(ApiDbContext context, ILogger<VehiclesController
                 new { message = "Vehicle added successfully", id = newVehicle.Id });
         }
     }
-    
+
     [HttpPost("get_vehicles")]
     public async Task<IActionResult> GetVehiclesNew([FromBody] GetVehiclesRequest requestBody)
     {
-        Console.WriteLine(CalculateCrc("a"));
-        logger.LogInformation("Received request to get new vehicles.");
+        logger.LogInformation("Received request to get specific vehicles.");
 
         var responseVehicles = new List<GetVehiclesResponseVehicle>();
         var allServerVehicles = await context.Vehicles.AsNoTracking().ToListAsync();
 
         if (requestBody.Vehicles == null || requestBody.Vehicles.Count == 0)
-        {
-            responseVehicles.AddRange(allServerVehicles.Select(serverVehicle => new GetVehiclesResponseVehicle { Model = serverVehicle.Model, Json = serverVehicle.Json }));
+            return Ok(responseVehicles);
 
-            logger.LogInformation("Client requested all vehicles. Returning {Count} vehicles.",
-                responseVehicles.Count);
-        }
-        else
+        var serverVehicleDict = allServerVehicles
+            .ToDictionary(v => v.Model, v => v, StringComparer.OrdinalIgnoreCase);
+        
+        foreach (var clientVehicle in requestBody.Vehicles)
         {
-            var clientVehicleCrcDictionary =
-                requestBody.Vehicles.ToDictionary(v => v.Model, v => v.Crc, StringComparer.OrdinalIgnoreCase);
+            if (!serverVehicleDict.TryGetValue(clientVehicle.Model, out var serverVehicle)) continue;
+            if (string.Equals(serverVehicle.Crc, clientVehicle.Crc, StringComparison.OrdinalIgnoreCase)) continue;
 
-            foreach (var serverVehicle in allServerVehicles)
+            responseVehicles.Add(new GetVehiclesResponseVehicle
             {
-                if (clientVehicleCrcDictionary.TryGetValue(serverVehicle.Model, out var clientCrc))
-                {
-                    if (string.Equals(serverVehicle.Crc, clientCrc, StringComparison.OrdinalIgnoreCase)) continue;
-                    responseVehicles.Add(new GetVehiclesResponseVehicle
-                    {
-                        Model = serverVehicle.Model,
-                        Json = serverVehicle.Json
-                    });
-                    logger.LogInformation(
-                        "Sending updated vehicle: {Model} (Server CRC: {ServerCrc}, Client CRC: {ClientCrc})",
-                        serverVehicle.Model, serverVehicle.Crc, clientCrc);
-                }
-                else
-                {
-                    responseVehicles.Add(new GetVehiclesResponseVehicle
-                    {
-                        Model = serverVehicle.Model,
-                        Json = serverVehicle.Json
-                    });
-                    logger.LogInformation("Sending new vehicle to client: {Model}", serverVehicle.Model);
-                }
-            }
+                Model = serverVehicle.Model,
+                Json = serverVehicle.Json
+            });
+            logger.LogInformation(
+                "Sending updated vehicle: {Model} (Server CRC: {ServerCrc}, Client CRC: {ClientCrc})",
+                serverVehicle.Model, serverVehicle.Crc, clientVehicle.Crc);
         }
-
+        
         return Ok(responseVehicles);
     }
-    
+
     private static string CalculateCrc(string data)
     {
         var crc32 = new Crc32();
         var dataBytes = Encoding.UTF8.GetBytes(data);
-        
+
         crc32.Append(dataBytes);
         var hashBytes = crc32.GetCurrentHash();
         var crcValue = BitConverter.ToUInt32(hashBytes, 0);
