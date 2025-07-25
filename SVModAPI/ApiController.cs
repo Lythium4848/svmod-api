@@ -104,7 +104,14 @@ public class VehiclesController(ApiDbContext context, ILogger<VehiclesController
         
         return Ok(responseVehicles);
     }
-
+    
+    [HttpGet("get_all_vehicles")]
+    public async Task<ActionResult<IEnumerable<Vehicle>>> GetAllVehicles()
+    {
+        var vehicles = await context.Vehicles.ToListAsync();
+        return Ok(vehicles);
+    }
+    
     private static string CalculateCrc(string data)
     {
         var crc32 = new Crc32();

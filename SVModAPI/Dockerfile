@@ -1,23 +1,18 @@
-﻿FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
-USER $APP_UID
-WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
-
+﻿# Use official .NET SDK image for build
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["SVModAPI/SVModAPI.csproj", "SVModAPI/"]
-RUN dotnet restore "SVModAPI/SVModAPI.csproj"
+
+# Copy csproj and restore as distinct layers
+COPY SVModAPI/SVModAPI.csproj SVModAPI/
+RUN dotnet restore SVModAPI/SVModAPI.csproj
+
+# Copy everything else and build
 COPY . .
-WORKDIR "/src/SVModAPI"
-RUN dotnet build "./SVModAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR /src/SVModAPI
+RUN dotnet publish -c Release -o /app --no-restore
 
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./SVModAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
-
-FROM base AS final
+# Final stage/image
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "SVModAPI.dll"]
+COPY --from=build /app .
+ENTRYPOINT [ "dotnet", "SVModAPI.dll" ]
